@@ -30,7 +30,7 @@ public class SwerveDriveSubsystem extends SubsystemBase {
     boolean fieldOriented = true;
 
     // An array of all the modules on the swerve drive
-    private SwerveModule[] swerveModules;
+    private static SwerveModule[] swerveModules;
 
     // The odometry for the swerve drive
     private SwerveOdometry odometry;
@@ -57,7 +57,7 @@ public class SwerveDriveSubsystem extends SubsystemBase {
     private double rotationVelocity;
 
     private double[] velocities;
-    private double[] angles;
+    private static double[] angles;
     private ChassisSpeeds moduleSpeeds =new ChassisSpeeds(0, 0, 0);
     
     public final SwerveDriveKinematics swerveKinematics = new SwerveDriveKinematics(
@@ -307,8 +307,12 @@ public class SwerveDriveSubsystem extends SubsystemBase {
      * 
      * @param moduleId The ID of the module to get
      */
-    public double getModuleAngle(int moduleId) {
+    public static double getModuleAngle(int moduleId) {
         return angles[moduleId];
+    }
+
+    public static double getModuleTargetAngle(int moduleId) {
+        return swerveModules[moduleId].getTargetAngle();
     }
 
     public double getXVelocity() {

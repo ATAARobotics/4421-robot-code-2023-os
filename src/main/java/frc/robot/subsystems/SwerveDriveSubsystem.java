@@ -22,6 +22,7 @@ import frc.robot.Pigeon;
 import frc.robot.Constants;
 import frc.robot.SwerveModule;
 import frc.robot.SwerveOdometry;
+import frc.robot.fixDriving;
 
 public class SwerveDriveSubsystem extends SubsystemBase {
     private Pigeon pigeon;
@@ -84,16 +85,16 @@ public class SwerveDriveSubsystem extends SubsystemBase {
 
         // Initialize four swerve modules using the SwerveModule class
         SwerveModule frontLeftModule = new SwerveModule(driveMotors[0], rotationMotors[0],
-                new CANCoder(Constants.ROTATION_ENCODERS_ID[0], bus), Constants.ANGLE_OFFSET[0], false,
+                new CANCoder(Constants.ROTATION_ENCODERS_ID[0], bus), Constants.ANGLE_OFFSET[0] + fixDriving.getOffsetDifference(0), false,
                 Constants.TICKS_PER_METER[0], 0, "Front Left");
         SwerveModule frontRightModule = new SwerveModule(driveMotors[1], rotationMotors[1],
-                new CANCoder(Constants.ROTATION_ENCODERS_ID[1], bus), Constants.ANGLE_OFFSET[1], false,
+                new CANCoder(Constants.ROTATION_ENCODERS_ID[1], bus), Constants.ANGLE_OFFSET[1] + fixDriving.getOffsetDifference(1), false,
                 Constants.TICKS_PER_METER[1], 1, "Front Right");
         SwerveModule rearLeftModule = new SwerveModule(driveMotors[2], rotationMotors[2],
-                new CANCoder(Constants.ROTATION_ENCODERS_ID[2], bus), Constants.ANGLE_OFFSET[2], false,
+                new CANCoder(Constants.ROTATION_ENCODERS_ID[2], bus), Constants.ANGLE_OFFSET[2] + fixDriving.getOffsetDifference(2), false,
                 Constants.TICKS_PER_METER[2], 2, "Rear Left");
         SwerveModule rearRightModule = new SwerveModule(driveMotors[3], rotationMotors[3],
-                new CANCoder(Constants.ROTATION_ENCODERS_ID[3], bus), Constants.ANGLE_OFFSET[3], false,
+                new CANCoder(Constants.ROTATION_ENCODERS_ID[3], bus), Constants.ANGLE_OFFSET[3] + fixDriving.getOffsetDifference(3), false,
                 Constants.TICKS_PER_METER[3], 3, "Rear Right");
 
         // Put the swerve modules in an array so we can process them easier

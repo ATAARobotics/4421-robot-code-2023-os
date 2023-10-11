@@ -100,7 +100,7 @@ public class RobotContainer {
         //                                 () -> 1));   
         joysticks.Forward.onTrue(new DriveCommand(m_swerveDriveSubsystem, () -> -1,
                                 () -> 0,
-                                joysticks::getRotationVelocity, this::getSwerveSpeed,
+                                () -> 0, this::getSwerveSpeed,
                                 this::getSwerveSpeedRot))
                         .onFalse(new DriveCommand(m_swerveDriveSubsystem, joysticks::getXVelocity,
                                 joysticks::getYVelocity,

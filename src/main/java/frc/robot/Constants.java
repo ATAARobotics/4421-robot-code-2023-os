@@ -44,7 +44,7 @@ public class Constants {
     public static final double MAXIMUM_ACCELERATION = 2.0;
 
     public static final double MAXIMUM_ROTATIONAL_SPEED = Math.PI;
-    public static final double SLOW_MAXIMUM_ROTATIONAL_SPEED = Math.PI;
+    public static final double SLOW_MAXIMUM_ROTATIONAL_SPEED = Math.PI/8;
     // Maximum rotational speed is in radians/second Auto
     public static final double MAXIMUM_ROTATIONAL_SPEED_AUTO = Math.PI;
     // USED ONLY IN AUTO - Maximum rotational acceleration is in
@@ -113,12 +113,7 @@ public class Constants {
 
 
     // Drive encoder ticks per meter
-    public static final double[] TICKS_PER_METER = COMP_BOT ? new double[] {
-        43310.1955374, 43310.1955374, 43310.1955374, 43310.1955374
-    }
-            : new double[] {
-                    0, 0, 0, 0
-            };
+    public static final double TICKS_PER_METER = 1015.08270791;
 
     // DRIVER CONFIG
     // Dead zones of each joystick - Measured from 0 to 1. This should always be at

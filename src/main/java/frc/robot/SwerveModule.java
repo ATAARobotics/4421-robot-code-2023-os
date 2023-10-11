@@ -4,6 +4,9 @@ import com.ctre.phoenix.motorcontrol.can.TalonFX;
 import com.ctre.phoenix.sensors.AbsoluteSensorRange;
 import com.ctre.phoenix.sensors.CANCoder;
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.RelativeEncoder;
+import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.CANSparkMax.ControlType;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -51,11 +54,9 @@ public class SwerveModule {
     // Create a PID for controlling the angle of the module
     private PIDController angleController = new PIDController(0.9, 0.003, 0.005);
 
-    // Create a PID for controlling the velocity of the module
-    private PIDController velocityController = new PIDController(0.2, 1.2, 0.005);
 
     // Create a feedforward for Velocity
-    SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(Constants.driveKS, Constants.driveKV, Constants.driveKA);
+    SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward( 0.667, 2.44, 0.27);
     double newP = 0.65;
     double newI = 0.65;
     double newD = 0.005;
@@ -64,6 +65,8 @@ public class SwerveModule {
     private double curI = 0;
     private double curD = 0;
 
+    private SparkMaxPIDController driveController;
+    private RelativeEncoder driveEncoder;
     private double feedforwardValue;
 
     //The last time the Swerve Module was updated
@@ -98,6 +101,8 @@ public class SwerveModule {
         this.rotationOffset = rotationOffset;
 
         this.ticksPerMeter = driveTicksPerMeter;
+        this.driveController = driveMotor.getPIDController();
+        this.driveEncoder = driveMotor.getEncoder();
 
         this.id = id;
         this.name = name;
@@ -107,6 +112,11 @@ public class SwerveModule {
             this.inversionConstant = -1.0;
         }
 
+        driveController.setP(0.1);
+        driveController.setI(0.0);
+        driveController.setD(0.0);
+        driveController.setFF(0.0);
+        driveEncoder.setVelocityConversionFactor(0.0009851414);
         // Set up the encoder from the drive motor
         //this.driveMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor);
         //this.driveMotor.setSelectedSensorPosition(0);
@@ -127,7 +137,7 @@ public class SwerveModule {
             SwerveModuleState finalSwerveState = new SwerveModuleState(speed,Rotation2d.fromRadians(angle));
     
             setTargetAngle(finalSwerveState.angle.getRadians());
-            setSpeed(finalSwerveState);
+            setSpeed(state);
             setAngle();
         }else{
             double speed = state.speedMetersPerSecond;
@@ -158,8 +168,14 @@ public class SwerveModule {
     }
 
     private void setSpeed(SwerveModuleState state){
-        double percentOutput = inversionConstant*reverseMultiplier*state.speedMetersPerSecond / 4.5;
-        driveMotor.set(percentOutput);
+        //System.out.println(state.speedMetersPerSecond);
+        // double percentOutput = inversionConstant*reverseMultiplier*state.speedMetersPerSecond / 4.5;
+        // driveMotor.set(percentOutput);
+        driveController.setReference(
+          state.speedMetersPerSecond*inversionConstant*reverseMultiplier,
+          ControlType.kVelocity,
+          0,
+          feedforward.calculate(state.speedMetersPerSecond*inversionConstant*reverseMultiplier));
     }
     public double getSpeed(){
         return driveMotor.getEncoder().getVelocity();

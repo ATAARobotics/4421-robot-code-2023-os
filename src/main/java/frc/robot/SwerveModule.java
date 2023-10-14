@@ -7,6 +7,7 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
+import com.revrobotics.CANSparkMax.IdleMode;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -164,7 +165,9 @@ public class SwerveModule {
         // }
         // Set the rotation motor velocity based on the next value from the angle PID,
         // clamped to not exceed the maximum speed
-        rotationMotor.set(rotationVelocity);
+        if(rotationMotor.getIdleMode() == IdleMode.kBrake){
+            rotationMotor.set(rotationVelocity);
+        }
     }
 
     private void setSpeed(SwerveModuleState state){
@@ -262,15 +265,17 @@ public class SwerveModule {
     }
 
     public void setBrakes(boolean brakesOn) {
-        // if (brakesOn) {
-        //     driveMotor.setNeutralMode(NeutralMode.Brake);
-        //     rotationMotor.setNeutralMode(NeutralMode.Brake);
-        // } else {
-        //     driveMotor.setNeutralMode(NeutralMode.Coast);
-        //     rotationMotor.setNeutralMode(NeutralMode.Coast);
-        // }
+        if (brakesOn) {
+            driveMotor.setIdleMode(IdleMode.kBrake);
+            rotationMotor.setIdleMode(IdleMode.kBrake);
+        } else {
+            driveMotor.setIdleMode(IdleMode.kCoast);
+            rotationMotor.setIdleMode(IdleMode.kCoast);
+        }
     }
-
+    public IdleMode getBrakes(){
+        return rotationMotor.getIdleMode();
+    }
     /**
      * Get the id of the module
      */

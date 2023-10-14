@@ -71,7 +71,7 @@ public class Robot extends TimedRobot {
         if (brakesOffTimer.get() > 2.5) {
             brakesOffTimer.stop();
             brakesOffTimer.reset();
-            //robotContainer.getSwerveDriveSubsystem().setBrakes(false);
+            robotContainer.getSwerveDriveSubsystem().setBrakes(false);
         }
     }
 

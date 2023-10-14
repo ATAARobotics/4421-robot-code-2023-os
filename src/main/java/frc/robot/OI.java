@@ -23,6 +23,7 @@ class OI {
     private double speed;
     private boolean override = false;
     public JoystickButton Forward;
+    public JoystickButton RecordOffset;
     public JoystickButton RotIntake;
     public JoystickButton AutoBalance;
     public JoystickButton OverridePivotUp;
@@ -62,6 +63,7 @@ class OI {
             DriverStation.reportError("IOException on button binding file", false);
         }
         Forward = driveStick.getWPIJoystickButton("Forward");
+        RecordOffset = driveStick.getWPIJoystickButton("RecordOffset");
     }
 
     public void rumbleGunnerOn() {

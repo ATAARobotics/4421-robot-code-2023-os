@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 import com.ctre.phoenix.motorcontrol.can.TalonFX;
 import com.ctre.phoenix.sensors.CANCoder;
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.wpilibj.DriverStation;
@@ -59,7 +60,7 @@ public class SwerveDriveSubsystem extends SubsystemBase {
     private double[] velocities;
     private double[] angles;
     private ChassisSpeeds moduleSpeeds =new ChassisSpeeds(0, 0, 0);
-    
+    private double[] offsets = {0, 0, 0, 0};
     public final SwerveDriveKinematics swerveKinematics = new SwerveDriveKinematics(
         new Translation2d(Constants.WHEELBASE / 2.0, Constants.TRACK_WIDTH / 2.0),
         new Translation2d(Constants.WHEELBASE / 2.0, -Constants.TRACK_WIDTH / 2.0),
@@ -346,5 +347,20 @@ public class SwerveDriveSubsystem extends SubsystemBase {
             module.setState(moduleStates[module.getId()], true);
           
         }
+    }
+    public void setOffsets(){
+        if(swerveModules[0].getBrakes() == IdleMode.kBrake){
+            for (SwerveModule module : swerveModules) {
+                offsets[module.getId()] = module.getAngle();
+                module.setBrakes(false);
+            }
+        } 
+        else{
+            for (SwerveModule module : swerveModules) {
+                System.out.println(module.getName() + " offset " + (module.getAngle() - offsets[module.getId()]));
+            }
+            setBrakes(true);
+        }
+
     }
 }

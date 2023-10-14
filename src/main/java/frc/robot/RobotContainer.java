@@ -106,6 +106,7 @@ public class RobotContainer {
                                 joysticks::getYVelocity,
                                 joysticks::getRotationVelocity, this::getSwerveSpeed,
                                 this::getSwerveSpeedRot));
+        joysticks.RecordOffset.onTrue(new InstantCommand(m_swerveDriveSubsystem::setOffsets, m_swerveDriveSubsystem));
         //.onFalse(new InstantCommand(() -> {swerveSpeed=Constants.SLOW_MAXIMUM_SPEED; swerveSpeedRot=Constants.SLOW_MAXIMUM_ROTATIONAL_SPEED;}));
 
     }

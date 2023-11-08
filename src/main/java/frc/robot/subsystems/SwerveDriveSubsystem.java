@@ -9,6 +9,7 @@ import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -82,7 +83,6 @@ public class SwerveDriveSubsystem extends SubsystemBase {
         CANSparkMax[] rotationMotors = { new CANSparkMax(Constants.ROTATION_MOTORS_ID[0], MotorType.kBrushless),
                 new CANSparkMax(Constants.ROTATION_MOTORS_ID[1], MotorType.kBrushless), new CANSparkMax(Constants.ROTATION_MOTORS_ID[2], MotorType.kBrushless),
                 new CANSparkMax(Constants.ROTATION_MOTORS_ID[3], MotorType.kBrushless) };
-
         // Initialize four swerve modules using the SwerveModule class
         SwerveModule frontLeftModule = new SwerveModule(driveMotors[0], rotationMotors[0],
                 new CANCoder(Constants.ROTATION_ENCODERS_ID[0], bus), Constants.ANGLE_OFFSET[0], false,
@@ -171,13 +171,12 @@ public class SwerveDriveSubsystem extends SubsystemBase {
             // if (Constants.REPORTING_DIAGNOSTICS) {
             // SmartDashboard.putNumber("Gyro Value", pigeon.getYaw());
             // }
+            
             SwerveModuleState[] moduleStates = swerveKinematics.toSwerveModuleStates(moduleSpeeds);
+            // Timer.delay(10);
             // Execute functions on each swerve module
             for (SwerveModule module : swerveModules) {
                 module.setState(moduleStates[module.getId()]);
-                SmartDashboard.putNumber(module.getName() + " abs angle", module.getAngle());
-                SmartDashboard.putNumber(module.getName() + " abs speed", module.getSpeed());
-
                 //SmartDashboard.putNumber(module.getName() + " postion distance", module.getPosition().distanceMeters);
                 // Run periodic tasks on the module (running motors)
             }
@@ -358,6 +357,7 @@ public class SwerveDriveSubsystem extends SubsystemBase {
         else{
             for (SwerveModule module : swerveModules) {
                 System.out.println(module.getName() + " offset " + (module.getAngle() - offsets[module.getId()]));
+                SmartDashboard.putNumber(module.getName() + " offset value test",  (module.getAngle() - offsets[module.getId()]));
             }
             setBrakes(true);
         }

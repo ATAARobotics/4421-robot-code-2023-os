@@ -58,12 +58,7 @@ public class Constants {
 //             : new double[] {
 //                     0, 0, 0, 0
 //             };
-    public static final double[] ANGLE_OFFSET = true ? new double[] {
-        0.576776776245001, -0.713301066366823+(Math.PI/2), 2.038660467100017+(Math.PI-3.13545673043825), 1.840776945462769+(Math.PI/2)+(Math.PI-3.13545673043825)
-    }
-            : new double[] {
-                2.5510100502538213, 0, 0, 0
-        };
+    public static final double[] ANGLE_OFFSET = new double[] {0, 130.341796875-180.70, 62.75390625-180.17+90, -(360.08-345.9375)};
         // public static final double[] ANGLE_OFFSET = COMP_BOT ? new double[] {
         //         0.581378718608658, 0.868233125943273, 2.047864351827331, -2.89615572752809
         //         }

@@ -3,6 +3,9 @@ package frc.robot;
 import com.ctre.phoenix.motorcontrol.can.TalonFX;
 import com.ctre.phoenix.sensors.AbsoluteSensorRange;
 import com.ctre.phoenix.sensors.CANCoder;
+import com.ctre.phoenix.sensors.CANCoderConfiguration;
+import com.ctre.phoenix.sensors.SensorInitializationStrategy;
+import com.ctre.phoenix.sensors.SensorTimeBase;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
@@ -15,6 +18,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.math.MathUtil;
 import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -30,7 +34,6 @@ public class SwerveModule {
     private double epsilon = 0.000000000000001;
     private CANSparkMax driveMotor;
     private CANSparkMax rotationMotor;
-    private CANCoder rotationEncoder;
 
     private double ticksPerMeter;
 
@@ -67,7 +70,12 @@ public class SwerveModule {
     private double curD = 0;
 
     private SparkMaxPIDController driveController;
+    private SparkMaxPIDController rotationController;
+
     private RelativeEncoder driveEncoder;
+    private RelativeEncoder rotationEncoder;
+    private CANCoder rotationCanCoder;
+
     private double feedforwardValue;
 
     //The last time the Swerve Module was updated
@@ -94,19 +102,29 @@ public class SwerveModule {
      * @param id                 The ID of the module
      * @param name               The name of the module
      */
-    public SwerveModule(CANSparkMax driveMotor, CANSparkMax rotationMotor, CANCoder rotationEncoder, double rotationOffset,
+    public SwerveModule(CANSparkMax driveMotor, CANSparkMax rotationMotor, CANCoder rotationINIT, double rotationOffsetlocal,
             boolean invertDrive, double driveTicksPerMeter, int id, String name) {
         this.driveMotor = driveMotor;
         this.rotationMotor = rotationMotor;
-        this.rotationEncoder = rotationEncoder;
-        this.rotationOffset = rotationOffset;
-
+        this.rotationOffset = rotationOffsetlocal;
+        
         this.ticksPerMeter = driveTicksPerMeter;
         this.driveController = driveMotor.getPIDController();
         this.driveEncoder = driveMotor.getEncoder();
-
+        this.rotationCanCoder = rotationINIT;
+        this.rotationController = rotationMotor.getPIDController();
+        this.rotationEncoder = rotationMotor.getEncoder();
         this.id = id;
         this.name = name;
+        CANCoderConfiguration canCoderConfiguration = new CANCoderConfiguration();
+        canCoderConfiguration.absoluteSensorRange = AbsoluteSensorRange.Unsigned_0_to_360;
+        canCoderConfiguration.initializationStrategy = SensorInitializationStrategy.BootToAbsolutePosition;
+        canCoderConfiguration.sensorTimeBase = SensorTimeBase.PerSecond;
+        canCoderConfiguration.unitString = "deg";
+        
+        rotationCanCoder.configFactoryDefault();
+        rotationCanCoder.configAllSettings(canCoderConfiguration);   
+             
         SmartDashboard.putNumber(name + " offset", rotationOffset);
 
         if (invertDrive) {
@@ -114,59 +132,82 @@ public class SwerveModule {
         }
 
         driveController.setP(0.1);
-        driveController.setI(0.0);
+        driveController.setI(0.001);
         driveController.setD(0.0);
         driveController.setFF(0.0);
         driveEncoder.setVelocityConversionFactor(0.0009851414);
+
+        // angle controller
+        rotationMotor.setInverted(true);
+
+        rotationController.setP(1.5);
+        rotationController.setI(0.03);
+        rotationController.setD(0.1);
+        rotationController.setFF(0.0);
+        rotationController.setPositionPIDWrappingEnabled(true);
+        rotationController.setPositionPIDWrappingMaxInput(2 * Math.PI);
+        rotationController.setPositionPIDWrappingMinInput(0);
+        rotationEncoder.setPositionConversionFactor((2*Math.PI)/(150/7));
+        System.out.println(id +" postion "+rotationCanCoder.getAbsolutePosition() + " offset " + rotationOffset);
+        rotationMotor.burnFlash();
+        rotationEncoder.setPosition(Units.degreesToRadians(rotationCanCoder.getAbsolutePosition() - rotationOffset));
         // Set up the encoder from the drive motor
         //this.driveMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor);
         //this.driveMotor.setSelectedSensorPosition(0);
 
         // Set up the encoder from the rotation motor
-        this.rotationEncoder.configAbsoluteSensorRange(AbsoluteSensorRange.Unsigned_0_to_360);
 
         // Because the rotation is on a circle, not a line, we want to take the shortest
         // route to the setpoint - this function tells the PID it is on a circle from 0
         // to 2*Pi
-        angleController.enableContinuousInput(-Math.PI, Math.PI);
     }
 
     public void setState(SwerveModuleState state, boolean ignoreVel){
         if(ignoreVel == false){
             double speed = state.speedMetersPerSecond;
             double angle = state.angle.getRadians();
-            SwerveModuleState finalSwerveState = new SwerveModuleState(speed,Rotation2d.fromRadians(angle));
-    
-            setTargetAngle(finalSwerveState.angle.getRadians());
+            SmartDashboard.putNumber(name + " abs angle", rotationCanCoder.getAbsolutePosition()-rotationOffset);
+            SwerveModuleState finalSwerveState = SwerveModuleState.optimize(state, getState().angle);
+
+            // setTargetAngle(finalSwerveState.angle.getRadians());
             setSpeed(state);
-            setAngle();
+            setAngle(finalSwerveState);
         }else{
             double speed = state.speedMetersPerSecond;
             double angle = state.angle.getRadians();
             SwerveModuleState finalSwerveState = new SwerveModuleState(speed,Rotation2d.fromRadians(angle));
             SwerveModuleState SpeedSwerveState = new SwerveModuleState(0,Rotation2d.fromRadians(angle));
 
-            setTargetAngle(finalSwerveState.angle.getRadians());
+            // setTargetAngle(finalSwerveState.angle.getRadians());
             setSpeed(SpeedSwerveState);
-            setAngle();
+            setAngle(SpeedSwerveState);
         }
         
     }
     public void setState(SwerveModuleState state){
         setState(state, false);
     }
-    private void setAngle(){
-        SmartDashboard.putNumber(name + " angle", rotationEncoder.getAbsolutePosition()+SmartDashboard.getNumber(name + " offset", rotationOffset));
-        double rotationVelocity = -angleController.calculate(getAngle()) * inversionConstant;
+    public SwerveModuleState getState() {
+        double velocity = driveEncoder.getVelocity();
+        Rotation2d rot = new Rotation2d(rotationEncoder.getPosition());
+        return new SwerveModuleState(velocity, rot);
+      }
+    
+    private void setAngle(SwerveModuleState state){
+        // SmartDashboard.putNumber(name + " angle", rotationEncoder.getAbsolutePosition()+SmartDashboard.getNumber(name + " offset", rotationOffset));
+        // double rotationVelocity = -angleController.calculate(getAngle()) * inversionConstant;
         // Clamp the value (not scale because faster is okay, it's on a PID)
-        rotationVelocity = MathUtil.clamp(rotationVelocity, -maxRotationSpeed, maxRotationSpeed);
+        // rotationVelocity = MathUtil.clamp(rotationVelocity, -maxRotationSpeed, maxRotationSpeed);
         // if (rotationVelocity > -minRotationSpeed && rotationVelocity < minRotationSpeed) {
         //     rotationVelocity = 0.0;
         // }
         // Set the rotation motor velocity based on the next value from the angle PID,
         // clamped to not exceed the maximum speed
         if(rotationMotor.getIdleMode() == IdleMode.kBrake){
-            rotationMotor.set(rotationVelocity);
+            // rotationMotor.set(rotationVelocity);
+            rotationController.setReference(
+                state.angle.getRadians(),
+                ControlType.kPosition);
         }
     }
 
@@ -175,10 +216,10 @@ public class SwerveModule {
         // double percentOutput = inversionConstant*reverseMultiplier*state.speedMetersPerSecond / 4.5;
         // driveMotor.set(percentOutput);
         driveController.setReference(
-          state.speedMetersPerSecond*inversionConstant*reverseMultiplier,
+          state.speedMetersPerSecond*inversionConstant,
           ControlType.kVelocity,
           0,
-          feedforward.calculate(state.speedMetersPerSecond*inversionConstant*reverseMultiplier));
+          feedforward.calculate(state.speedMetersPerSecond*inversionConstant));
     }
     public double getSpeed(){
         return driveMotor.getEncoder().getVelocity();
@@ -219,36 +260,30 @@ public class SwerveModule {
      * Gets the angle in radians of the module from -Pi to Pi
      */
     public double getAngle() {
-        double angle = (rotationEncoder.getAbsolutePosition()/ 360 * 2.0 * Math.PI) + rotationOffset;
-        angle %= 2.0 * Math.PI;
-        if (angle < 0.0) {
-            angle += 2.0 * Math.PI;
-        }
-        angle -= Math.PI;
-
+        double angle = (rotationCanCoder.getAbsolutePosition()/ 180 * Math.PI) + rotationOffset;
         return angle;
     }
 
-    public void setTargetAngle(double angle) {
-        double currentAngle = getAngle();
+    // public void setTargetAngle(double angle) {
+    //     double currentAngle = getAngle();
 
-        // If the smallest angle between the current angle and the target is greater
-        // than Pi/2, invert the velocity and turn the wheel to a closer angle
-        // Math.atan2(y, x) computes the angle to a given point from the x-axis
-        if (Math.abs(Math.atan2(Math.sin(angle - currentAngle), Math.cos(angle - currentAngle))) > Math.PI / 2.0) {
-            angle += Math.PI;
-            angle %= 2.0 * Math.PI;
-            // Ensure the value is not negative
-            if (angle < 0) {
-                angle += 2.0 * Math.PI;
-            }
-            reverseMultiplier = -1.0;
-        } else {
-            reverseMultiplier = 1.0;
-        }
+    //     // If the smallest angle between the current angle and the target is greater
+    //     // than Pi/2, invert the velocity and turn the wheel to a closer angle
+    //     // Math.atan2(y, x) computes the angle to a given point from the x-axis
+    //     if (Math.abs(Math.atan2(Math.sin(angle - currentAngle), Math.cos(angle - currentAngle))) > Math.PI / 2.0) {
+    //         angle += Math.PI;
+    //         angle %= 2.0 * Math.PI;
+    //         // Ensure the value is not negative
+    //         if (angle < 0) {
+    //             angle += 2.0 * Math.PI;
+    //         }
+    //         reverseMultiplier = -1.0;
+    //     } else {
+    //         reverseMultiplier = 1.0;
+    //     }
 
-        angleController.setSetpoint(angle );
-    }
+    //     rotationController.setReference(angle, CANSparkMax.ControlType.kPosition);
+    // }
     /**
      * Gets the target angle in radians from the angle PID
      */

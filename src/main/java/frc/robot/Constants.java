@@ -1,219 +1,141 @@
 package frc.robot;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
+import com.revrobotics.CANSparkMax.IdleMode;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.wpilibj.Preferences;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.math.util.Units;
+import frc.lib.config.SwerveModuleConstants;
 
-/**
- * A centralized file that keeps track of constants of the robot, such as device
- * IDs, device ports and robot dimensions
- * 
- * This is not the same as the RobotMaps from previous years, the only thing in
- * this class is constants, each hardware class defines its own motors and
- * whatnot
- */
-public class Constants {
-    // Disables some safeties and enables logging of warnings we expect and know
-    // about during development
-    public static final boolean COMP_MODE = false;
+public final class Constants {
 
-    /**
-     * Identify which robot this is using Preferences on the rio. This is used to
-     * get things like different ticks per meter, offsets, and dimensions.
-     * If, for some reason you need to set this, you can put the following commented
-     * line into the Robot class' constructor:
-     * Preferences.setBoolean("compBot", *VALUE HERE*);
-     */
-    public static final boolean COMP_BOT = Preferences.getBoolean("compBot", true);
+  public static final class Swerve {
+    public static final double stickDeadband = 0.1;
 
-    // Enforces a maximum safe speed of the motors. This may cause steering issues.
-    public static final double MAX_SAFE_SPEED_OVERRIDE = COMP_MODE ? 1.0 : 0.8;
+    public static final int pigeonID = 20;
+    public static final boolean invertGyro = false; // Always ensure Gyro is CCW+ CW-
 
-// Measurements are in meters
-    public static final double WHEELBASE = COMP_BOT ? (18.5*2.54): (18.5*2.54); 
-    public static final double TRACK_WIDTH = COMP_BOT ? (24*2.54): (24*2.54);
+    /* Drivetrain Constants */
+    public static final double trackWidth = Units.inchesToMeters(21.73);
+    public static final double wheelBase = Units.inchesToMeters(21.73);
+    public static final double wheelDiameter = Units.inchesToMeters(4.0);
+    public static final double wheelCircumference = wheelDiameter * Math.PI;
 
-    // Maximum linear speed is in meters/second
-    public static final double MAXIMUM_SPEED = 4.5;
-    public static final double SLOW_MAXIMUM_SPEED = 1.5;
-    // USED ONLY IN AUTO - Maximum acceleration is in meters/second/second
-    public static final double MAXIMUM_ACCELERATION = 2.0;
+    public static final double openLoopRamp = 0.25;
+    public static final double closedLoopRamp = 0.0;
 
-    public static final double MAXIMUM_ROTATIONAL_SPEED = Math.PI;
-    public static final double SLOW_MAXIMUM_ROTATIONAL_SPEED = Math.PI/8;
-    // Maximum rotational speed is in radians/second Auto
-    public static final double MAXIMUM_ROTATIONAL_SPEED_AUTO = Math.PI;
-    // USED ONLY IN AUTO - Maximum rotational acceleration is in
-    // radians/second/second
-    public static final double MAXIMUM_ROTATIONAL_ACCELERATION = Math.PI;
+    public static final double driveGearRatio = (6.75 / 1.0); // 6.75:1
 
-//     // Swerve offset
-//     public static final double[] ANGLE_OFFSET = COMP_BOT ? new double[] {
-//         -24.0820313-45+5.2, 147.919922+135+15-0.6, 82.96875+104-5.2, 139.6582-180-10.65
-//     }
-//             : new double[] {
-//                     0, 0, 0, 0
-//             };
-    public static final double[] ANGLE_OFFSET = new double[] {0, 130.341796875-180.70, 62.75390625-180.17+90, -(360.08-345.9375)};
-        // public static final double[] ANGLE_OFFSET = COMP_BOT ? new double[] {
-        //         0.581378718608658, 0.868233125943273, 2.047864351827331, -2.89615572752809
-        //         }
-        //         : new double[] {
-        //         0, 0, 0, 0
-        // };
+    // FIXME: which of these is actually right?
+    // public static final double angleGearRatio = (12.8 / 1.0); // 12.8:1
+    public static final double angleGearRatio = ((150.0 / 7.0) / 1.0); // 12.8:1 --> 150/7:1
 
-
-    /*
-     * CAN ID and CAN Bus
-     * CAN Bus options supported: "rio", "canivore"
-     * ***IF CANIVORE FAILS CHANGE SWERVE_BUS_ACTIVE TO false***
-     */
-
-    public static final double driveKS = (0.32 / 12);
-    public static final double driveKV = (1.51 / 12);
-    public static final double driveKA = (0.27 / 12);
-
-    // CAN FD Device IDs
-    public static final int[] DRIVE_MOTORS_ID = { 1, 2, 3, 4 };
-    public static final int[] ROTATION_MOTORS_ID = { 5, 6, 7, 8 };
-    public static final int[] ROTATION_ENCODERS_ID = { 9, 10, 11, 12 };
-    public static final int PIGEON_ID = 20;
-
-    // CAN Legacy Device IDs
-    public static final int PIVOT_MOTOR_ID = 13;
-    public static final int PIVOT_MOTOR2_ID = 22;
-    public static final int TELESCOPING_ARM_MOTOR_ID = 14;
-    public static final int INTAKE_MOTOR_ID = 15;
-    public static final int PIVOT_ENCODER_ID = 16;
-    public static final int TELESCOPING_ARM_ENCODER_ID = 17;
-    
-    // CANdle
-    public static final int CANDLE_ID = 21;
-    public static final int[] yellow = {255, 225, 0};
-    public static final int[] red = {255, 0, 0};
-    public static final int[] blue = {100, 100, 255};
-    public static final int[] purple = {100, 0, 100};
-
-    /*
-     * CAN Bus (Legacy) NOT CURRENTLY SUPPORTED
-     * public static final String SPARK_MOTOR_BUS = "rio";
-     */
-
-    // PWM Ports
-    public static final int INTAKE_MOTOR_PORT = 0;
-
-
-    // Drive encoder ticks per meter
-    public static final double TICKS_PER_METER = 1015.08270791;
-
-    // DRIVER CONFIG
-    // Dead zones of each joystick - Measured from 0 to 1. This should always be at
-    // least 0.1.
-    public static final double JOY_DEAD_ZONE = 0.3;
-    // Whether teleop should start in field oriented mode
-    public static final boolean FIELD_ORIENTED = true;
-    // The sensitivity value for the joysticks - the values are exponentiated to
-    // this value, so higher numbers result in a lower sensitivity, 1 results in
-    // normal sensitivity, and decimals increase sensitivity
-    public static final double JOYSTICK_SENSITIVITY = 1;
-    public static final double TURNING_SENSITIVITY = 3;
-
-    // LOGGING
-    // Set this to true if you want to log diagnostics to SmartDashboard
-    public static final boolean REPORTING_DIAGNOSTICS = true;
-
-
-    //Swerve Odometry Constants
     public static final SwerveDriveKinematics swerveKinematics = new SwerveDriveKinematics(
-            new Translation2d(WHEELBASE / 2.0, TRACK_WIDTH / 2.0),
-            new Translation2d(WHEELBASE / 2.0, -TRACK_WIDTH / 2.0),
-            new Translation2d(-WHEELBASE / 2.0, TRACK_WIDTH / 2.0),
-            new Translation2d(-WHEELBASE / 2.0, -TRACK_WIDTH / 2.0));
-    //Auto Balence
-    public static final double BEAM_BALANACED_DRIVE_KP = 0.2;
-    public static final double BEAM_BALANCED_GOAL_DEGREES = 0;
-    public static final double BEAM_BALANCED_ANGLE_TRESHOLD_DEGREES = 1;
+        new Translation2d(wheelBase / 2.0, trackWidth / 2.0),
+        new Translation2d(wheelBase / 2.0, -trackWidth / 2.0),
+        new Translation2d(-wheelBase / 2.0, trackWidth / 2.0),
+        new Translation2d(-wheelBase / 2.0, -trackWidth / 2.0));
 
-    //telescoping arm setpoints
-    public static final double TELESCOPING_STOWAGE_POINT = 452.0;
-    public static final double TELESCOPING_INTAKE_POINT = 47.724609375;
-    public static final double TELESCOPING_SCORING_POINT_CONE = -4809.0;
-    public static final double TELESCOPING_SCORING_POINT_CUBE = 0.0;
+    /* Swerve Voltage Compensation */
+    public static final double voltageComp = 12.0;
 
-    public static class VisionConstants {
-        /**
-         * Physical location of the camera on the robot, relative to the center of the robot.
-         */
-        public static final Transform3d CAMERA_TO_ROBOT =
-            new Transform3d(new Translation3d(-0.3425, 0.0, -0.233), new Rotation3d());
-        public static final Transform3d ROBOT_TO_CAMERA = CAMERA_TO_ROBOT.inverse();
+    /* Swerve Current Limiting */
+    public static final int angleContinuousCurrentLimit = 20;
+    public static final int driveContinuousCurrentLimit = 20;
 
-        
-      }
+    /* Angle Motor PID Values */
+    public static final double angleKP = 0.039;
+    public static final double angleKI = 0.001;
+    public static final double angleKD = 0.0;
+    public static final double angleKFF = 0.0;
+    public static final double angleIZone = 0.5;
 
+    /* Drive Motor PID Values */
+    public static final double driveKP = 0.1;
+    public static final double driveKI = 0.0;
+    public static final double driveKD = 0.0;
+    public static final double driveKFF = 0.0;
 
-      public static class placementConstants {
+    /* Drive Motor Characterization Values */
+    public static final double driveKS = 0.667;
+    public static final double driveKV = 2.44;
+    public static final double driveKA = 0.27;
 
-                public static enum placements {
-                        leftLeftBlue(0),
-                        leftMidBlue(1),
-                        leftRightBlue(2),
+    /* Drive Motor Conversion Factors */
+    public static final double driveConversionPositionFactor = (wheelDiameter * Math.PI) / driveGearRatio;
+    public static final double driveConversionVelocityFactor = driveConversionPositionFactor / 60.0;
+    public static final double angleConversionFactor = 360.0 / angleGearRatio;
 
-                        midLeftBlue(3),
-                        midMidBlue(4),
-                        midRightBlue(5),
+    /* Swerve Profiling Values */
+    public static final double maxSpeed = 1.0; // meters per second
+    public static final double maxAngularVelocity = 2.0;
 
-                        rightLeftBlue(6),
-                        rightMidBlue(7),
-                        rightRightBlue(8),
+    /* Neutral Modes */
+    public static final IdleMode angleNeutralMode = IdleMode.kBrake;
+    public static final IdleMode driveNeutralMode = IdleMode.kBrake;
 
-                        leftLeftRed(9),
-                        leftMidRed(10),
-                        leftRightRed(11),
+    /* Motor Inverts */
+    public static final boolean driveInvert = false;
+    public static final boolean angleInvert = true;
 
-                        midLeftRed(12),
-                        midMidRed(13),
-                        midRightRed(14),
+    /* Angle Encoder Invert */
+    public static final boolean canCoderInvert = false;
 
-                        rightLeftRed(15),
-                        rightMidRed(16),
-                        rightRightRed(17),
+    /* Module Specific Constants */
+    /* Front Left Module - Module 0 */
+    public static final class Mod0 {
+      public static final int driveMotorID = 1;
+      public static final int angleMotorID = 5;
+      public static final int canCoderID = 9;
+      public static final Rotation2d angleOffset = Rotation2d.fromDegrees(57.65625 + 180); //326.42
+      public static final SwerveModuleConstants constants = new SwerveModuleConstants(driveMotorID, angleMotorID,
+          canCoderID, angleOffset);
+    }
 
-                        feederBlue(18),
-                        feederRed(19);
+    /* Front Right Module - Module 1 */
+    public static final class Mod1 {
+      public static final int driveMotorID = 2;
+      public static final int angleMotorID = 6;
+      public static final int canCoderID = 10;
+      public static final Rotation2d angleOffset = Rotation2d.fromDegrees(99.228515625); //310.69
+      public static final SwerveModuleConstants constants = new SwerveModuleConstants(driveMotorID, angleMotorID,
+          canCoderID, angleOffset);
+    }
 
-                        private final int value;
-                        placements(final int newvalue) {
-                                value = newvalue;
-                        }
-                        public int getValue() {
-                                return value;
-                        }
-                };
-        
-        };
+    /* Back Left Module - Module 2 */
+    public static final class Mod2 {
+      public static final int driveMotorID = 3;
+      public static final int angleMotorID = 7;
+      public static final int canCoderID = 11;
+      public static final Rotation2d angleOffset = Rotation2d.fromDegrees(228.1640625 - 180); //242.66
+      public static final SwerveModuleConstants constants = new SwerveModuleConstants(driveMotorID, angleMotorID,
+          canCoderID, angleOffset);
+    }
 
-        public static final double E_TOLERANCE = 0.08; // meters
-        public static final double E_RTOLERANCE = 3.0; // degrees
+    /* Back Right Module - Module 3 */
+    public static final class Mod3 {
+      public static final int driveMotorID = 4;
+      public static final int angleMotorID = 8;
+      public static final int canCoderID = 12;
+      public static final Rotation2d angleOffset = Rotation2d.fromDegrees(352.6171875); //169.79
+      public static final SwerveModuleConstants constants = new SwerveModuleConstants(driveMotorID, angleMotorID,
+          canCoderID, angleOffset);
+    }
+  }
 
-        // not endpoint tolerances
-        public static final double TOLERANCE = 0.18; // meters
-        public static final double RTOLERANCE = 8.0; // degrees
-        
-        public static final double SPEEDLIMIT = 4; // meters per second
-        public static final double ROTLIMIT = Math.PI;
+  public static final class AutoConstants {
+    public static final double kMaxSpeedMetersPerSecond = 3;
+    public static final double kMaxAccelerationMetersPerSecondSquared = 3;
+    public static final double kMaxAngularSpeedRadiansPerSecond = Math.PI;
+    public static final double kMaxAngularSpeedRadiansPerSecondSquared = Math.PI;
 
-        public static final double MovementRatio = (1.6/1.13);
-        // pigeon tip threshold to reset odometry in degrees
-        public static final double tipThreshold = 5.0;
+    public static final double kPXController = 1;
+    public static final double kPYController = 1;
+    public static final double kPThetaController = 1;
 
-        // Intake time limit
-        public static final double INTAKE_TIME_LIMIT = 5;
-
-        // Outake Delay
-        public static final double OUTTAKE_DELAY = 0.35;
+    // Constraint for the motion profilied robot angle controller
+    public static final TrapezoidProfile.Constraints kThetaControllerConstraints = new TrapezoidProfile.Constraints(
+        kMaxAngularSpeedRadiansPerSecond, kMaxAngularSpeedRadiansPerSecondSquared);
+  }
 }

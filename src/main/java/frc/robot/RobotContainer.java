@@ -1,134 +1,98 @@
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
 package frc.robot;
 
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.livewindow.LiveWindow;
+import java.io.File;
+import java.util.HashMap;
+import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.*;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.commands.*;
 import frc.robot.subsystems.*;
 
-import edu.wpi.first.math.geometry.Translation2d;
-
+/**
+ * This class is where the bulk of the robot should be declared. Since
+ * Command-based is a
+ * "declarative" paradigm, very little robot logic should actually be handled in
+ * the {@link Robot}
+ * periodic methods (other than the scheduler calls). Instead, the structure of
+ * the robot (including
+ * subsystems, commands, and button mappings) should be declared here.
+ */
 public class RobotContainer {
+  /* Controllers */
+  private final Joystick driver = new Joystick(0);
 
-    // The initial position of the robot relative to the field. This is measured
-    // from the left-hand corner of the field closest to the driver, from the
-    // driver's perspective
+  /* Drive Controls */
+  private final int translationAxis = XboxController.Axis.kLeftY.value;
+  private final int strafeAxis = XboxController.Axis.kLeftX.value;
+  private final int rotationAxis = XboxController.Axis.kRightX.value;
 
-    public Translation2d initialPosition = new Translation2d(0, 0);
+  /* Driver Buttons */
+  private final JoystickButton zeroGyro = new JoystickButton(driver, XboxController.Button.kY.value);
+  private final JoystickButton robotCentric = new JoystickButton(driver, XboxController.Button.kLeftBumper.value);
+  private final JoystickButton goStraight = new JoystickButton(driver, XboxController.Button.kX.value);
+  private final JoystickButton shooterKey = new JoystickButton(driver, XboxController.Button.kA.value);
 
-    // Create hardware objects
-    private Pigeon pigeon = new Pigeon();
-    private final OI joysticks = new OI();
+  /* Subsystems */
+  public final Swerve s_Swerve = new Swerve();
+  public SendableChooser<Command> autoChooser;
+  public Command AutoCommand;
+  public final Shooter s_Shooter = new Shooter();
 
-    private final SwerveDriveSubsystem m_swerveDriveSubsystem;
-    // Auto Stuff
-    private final SendableChooser<Command> autoChooser = new SendableChooser<>();
+  /**
+   * The container for the robot. Contains subsystems, OI devices, and commands.
+   */
+  public RobotContainer() { 
 
-    private double swerveSpeed = Constants.SLOW_MAXIMUM_SPEED;
-    private double swerveSpeedRot = Constants.SLOW_MAXIMUM_ROTATIONAL_SPEED;
+    s_Swerve.setDefaultCommand(
+        new TeleopSwerve(
+            s_Swerve,
+            () -> -driver.getRawAxis(translationAxis),
+            () -> -driver.getRawAxis(strafeAxis),
+            () -> -driver.getRawAxis(rotationAxis),
+            () -> robotCentric.getAsBoolean()));
 
+    // Configure the button bindings
+    configureButtonBindings();
+  }
 
-    public RobotContainer(Alliance alliance) {
-        // Hardware-based objects
-        // NetworkTableInstance inst = NetworkTableInstance.getDefault();
-        
-        m_swerveDriveSubsystem = new SwerveDriveSubsystem(pigeon, initialPosition, "rio", alliance);
-        // new AprilTagLimelight(m_swerveDriveSubsystem.getOdometry(), m_swerveDriveSubsystem);
-     
-        m_swerveDriveSubsystem.setBrakes(true);
-        // Timer.delay(10);
-        m_swerveDriveSubsystem.setDefaultCommand(
-                new DriveCommand(m_swerveDriveSubsystem, joysticks::getXVelocity,
-                        joysticks::getYVelocity,
-                        joysticks::getRotationVelocity, this::getSwerveSpeed,
-                        this::getSwerveSpeedRot));
-        
+  /**
+   * Use this method to define your button->command mappings. Buttons can be
+   * created by
+   * instantiating a {@link GenericHID} or one of its subclasses ({@link
+   * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing
+   * it to a {@link
+   * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
+   */
+  private void configureButtonBindings() {
+    /* Driver Buttons */
+    zeroGyro.onTrue(new InstantCommand(() -> s_Swerve.zeroGyro()));
+    goStraight.whileTrue(
+        new TeleopSwerve(
+            s_Swerve,
+            () -> 0.25,
+            () -> 0,
+            () -> 0,
+            () -> robotCentric.getAsBoolean()));
 
-        // Testing Autos
-        // autoChooser.addOption("Square", new Square(m_swerveDriveSubsystem));
-        //autoChooser.addOption("Test", new Test(m_swerveDriveSubsystem, m_intakeSubsystem));
+    shooterKey.onTrue(new InstantCommand(() -> s_Shooter.setSpeed(SmartDashboard.getNumber("Shooter Speed", 0.2))));
+    shooterKey.onFalse(new InstantCommand(() -> s_Shooter.setSpeed(0)));
+  }
 
-        // autoChooser.addOption("SquareWithRot", new SquareWithRot(m_swerveDriveSubsystem));
-        // autoChooser.addOption("SquareWithOtherRot", new SquareWithOtherRot(m_swerveDriveSubsystem));
-
-
-        SmartDashboard.putData("Auto Chooser", autoChooser);
-
-        LiveWindow.disableAllTelemetry();
-
-        configureBindings();
-    }
-
-
-    private void configureBindings() {
-
-        
-
-        //joysticks.ResetOdo.onTrue(new InstantCommand(m_swerveDriveSubsystem::resetPosition));
-        // joysticks.TelescopingIn.whileTrue(new RunCommand(m_telescopingSubsystem::in, m_telescopingSubsystem))
-        // .onFalse(new InstantCommand(m_telescopingSubsystem::stop));
-
-        // joysticks.SlideLeft.onTrue(new DriveCommand(m_swerveDriveSubsystem, () -> 0.1,
-        //                 () -> 0,
-        //                 () -> 0, () -> 1,
-        //                 () -> 1)).onFalse(new DriveCommand(m_swerveDriveSubsystem, joysticks::getXVelocity,
-        //                                 joysticks::getYVelocity,
-        //                                 joysticks::getRotationVelocity, this::getSwerveSpeed,
-        //                                 () -> 1));
-        // joysticks.SlideRight.onTrue(new DriveCommand(m_swerveDriveSubsystem, () -> -0.1,
-        //                 () -> 0,
-        //                 () -> 0, () -> 1,
-        //                 () -> 1)).onFalse(new DriveCommand(m_swerveDriveSubsystem, joysticks::getXVelocity,
-        //                                 joysticks::getYVelocity,
-        //                                 joysticks::getRotationVelocity, this::getSwerveSpeed,
-        //                                 () -> 1));
-        // joysticks.RotateLeft.onTrue(new DriveCommand(m_swerveDriveSubsystem, () -> -0.1,
-        //                 () -> 0,
-        //                 () -> 0, () -> 1,
-        //                 () -> 1)).onFalse(new DriveCommand(m_swerveDriveSubsystem, joysticks::getXVelocity,
-        //                                 joysticks::getYVelocity,
-        //                                 joysticks::getRotationVelocity, this::getSwerveSpeed,
-        //                                 () -> 1));
-        // joysticks.RotateRight.onTrue(new DriveCommand(m_swerveDriveSubsystem, () -> 0,
-        //                 () -> -0.1,
-        //                 () -> 0, () -> 1,
-        //                 () -> 1)).onFalse(new DriveCommand(m_swerveDriveSubsystem, joysticks::getXVelocity,
-        //                                 joysticks::getYVelocity,
-        //                                 joysticks::getRotationVelocity, this::getSwerveSpeed,
-        //                                 () -> 1));   
-        joysticks.Forward.onTrue(new DriveCommand(m_swerveDriveSubsystem, () -> -1,
-                                () -> 0,
-                                () -> 0, this::getSwerveSpeed,
-                                this::getSwerveSpeedRot))
-                        .onFalse(new DriveCommand(m_swerveDriveSubsystem, joysticks::getXVelocity,
-                                joysticks::getYVelocity,
-                                joysticks::getRotationVelocity, this::getSwerveSpeed,
-                                this::getSwerveSpeedRot));
-        joysticks.RecordOffset.onTrue(new InstantCommand(m_swerveDriveSubsystem::setOffsets, m_swerveDriveSubsystem));
-        //.onFalse(new InstantCommand(() -> {swerveSpeed=Constants.SLOW_MAXIMUM_SPEED; swerveSpeedRot=Constants.SLOW_MAXIMUM_ROTATIONAL_SPEED;}));
-
-    }
-
-    public OI getOI() {
-        return joysticks;
-    }
-
-    public SwerveDriveSubsystem getSwerveDriveSubsystem() {
-        return m_swerveDriveSubsystem;
-    }
-
-   
-
-    public SendableChooser<Command> getAutonomousChooser() {
-        return autoChooser;
-    }
-    public double getSwerveSpeed(){
-        return swerveSpeed;
-    }
-    public double getSwerveSpeedRot(){
-        return swerveSpeedRot;
-    }
+  /**
+   * Use this to pass the autonomous command to the main {@link Robot} class.
+   *
+   * @return the command to run in autonomous
+   */
+  public Command getAutonomousCommand() {
+    return AutoCommand;
+  }
 }
